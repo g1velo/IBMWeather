@@ -31,16 +31,16 @@
 				<label>The Weather company userid password</label>
 				<description>The Weather company userid password</description>
 			</parameter>
-            <parameter name="url" type="text" required="true">
-                <context>url</context>
-                <label>URL</label>
-                <description>The Weather company Instance URL</description>
-            </parameter>
-            <parameter name="refresh" type="integer" required="false">
-                <label>Refresh Timer </label>
-                <description>Refresh Timer</description>
-                <default>1800</default>
-            </parameter>
+			<parameter name="url" type="text" required="true">
+				<context>url</context>
+				<label>URL</label>
+				<description>The Weather company Instance URL</description>
+			</parameter>
+			<parameter name="refresh" type="integer" required="false">
+				<label>Refresh Timer </label>
+				<description>Refresh Timer</description>
+				<default>1800</default>
+			</parameter>
 		</config-description>
 	</thing-type>
 
@@ -59,6 +59,7 @@
 			<channel id="precip_hrly" typeId="precip_hrly" />
 			<channel id="uv_desc" typeId="uv_desc" />
 			<channel id="uv_index" typeId="uv_index" />
+			<channel id="valid_time_gmt" typeId="valid_time_gmt" />
 		</channels>
 		<config-description>
 			<parameter name="user" type="text" required="true" readOnly="false">
@@ -69,25 +70,24 @@
 				<context>password</context>
 				<label>The Weather company userid password</label>
 				<description>The Weather company userid password</description>
-
 			</parameter>
 			<parameter name="url" type="text" required="true">
 				<context>url</context>
 				<label>URL</label>
 				<description>The Weather company Instance URL</description>
 			</parameter>
-            <parameter name="refresh" type="integer" required="true">
-                <label>Refresh Timer </label>
-                <description>Refresh Timer</description>
-                <default>3600</default>
-            </parameter>
+			<parameter name="refresh" type="integer" required="true">
+				<label>Refresh Timer </label>
+				<description>Refresh Timer</description>
+				<default>3600</default>
+			</parameter>
 		</config-description>
 	</thing-type>
 	<channel-type id="temp">
 		<item-type>Number</item-type>
 		<label>Temperature</label>
 		<description>Current Temperature</description>
-		<state pattern="%s °C" readOnly="true" />
+		<state pattern="%d °C" readOnly="true" />
 	</channel-type>
 	<channel-type id="rh">
 		<item-type>Number</item-type>
@@ -118,6 +118,13 @@
 		<label>Wind direction</label>
 		<description>Wind direction</description>
 		<state pattern="%s" readOnly="true" />
+	</channel-type>
+	<channel-type id="valid_time_gmt">
+		<item-type>DateTime</item-type>
+		<label>Valid Date GMT</label>
+		<description>Forecast Valid Until </description>
+		<category>Date</category>
+		<state readOnly="true" />
 	</channel-type>
 	<channel-type id="wspd">
 		<item-type>Number</item-type>

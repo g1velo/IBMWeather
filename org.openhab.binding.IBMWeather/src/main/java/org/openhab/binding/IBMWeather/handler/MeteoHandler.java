@@ -14,7 +14,9 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.eclipse.smarthome.core.library.types.DateTimeType;
 import org.eclipse.smarthome.core.library.types.DecimalType;
+import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -41,6 +43,7 @@ public class MeteoHandler extends BaseThingHandler {
     private String password;
     private String url;
     private BigDecimal refresh;
+    private String location;
     private ClientConfig clientConfig;
     private Client client;
     private HttpAuthenticationFeature feature;
@@ -55,7 +58,6 @@ public class MeteoHandler extends BaseThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -70,14 +72,17 @@ public class MeteoHandler extends BaseThingHandler {
         this.password = (String) m.get("password");
         this.url = (String) m.get("url");
         this.refresh = (BigDecimal) m.get("refresh");
+        // this.location = (String) m.get("location");
 
         logger.debug("config parameter user : {}", this.user);
         logger.debug("config parameter password: {}", this.password);
         logger.debug("config parameter url : {}", this.url);
         logger.debug("config parameter refresh : {}", this.refresh);
+        // logger.debug("config parameter location : {}", this.location);
 
-        // feature = HttpAuthenticationFeature.basic(this.user, this.password);
-        feature = HttpAuthenticationFeature.basic("5be6a164-a186-4d8b-b4b2-0976395f97db", "pgEN3Cw9Qb");
+        feature = HttpAuthenticationFeature.basic(this.user, this.password);
+        // feature = HttpAuthenticationFeature.basic("5be6a164-a186-4d8b-b4b2-0976395f97db", "pgEN3Cw9Qb");
+
         // logger.debug("feature : {} " , feature.);
 
         clientConfig = new ClientConfig();
@@ -107,9 +112,10 @@ public class MeteoHandler extends BaseThingHandler {
             @Override
             public void run() {
 
-                logger.debug("Starting target");
+                logger.debug("Starting target : {} ", url);
 
                 WebTarget webTarget = client.target("https://twcservice.eu-gb.mybluemix.net")
+                        // WebTarget webTarget = client.target("https://" + url)
                         .queryParam("language", "fr-FR").queryParam("units", "m")
                         .path("/api/weather/v1/location/34000%3A4%3AFR/observations.json");
 
@@ -129,19 +135,24 @@ public class MeteoHandler extends BaseThingHandler {
 
                     try {
                         String JSONString = response.readEntity(String.class);
-                        logger.debug(JSONString);
+                        logger.warn("JSON : {} ", JSONString);
                         Combo cs = objectMapper.readValue(JSONString, Combo.class);
                         Observation o = cs.getObservation();
 
+                        // ChannelStateObject cso = ObservationParser.setAll(o, thing);
+                        // if (cso.getChiud() != null && cso.getS() != null) {
+                        // logger.warn("Updatong {} to {} ", cso.getChiud(), cso.getS());
+                        // updateState(cso.getChiud(), cso.getS());
+                        // }
+
                         List<Channel> lc = thing.getChannels();
                         logger.debug("lc Size  : {} ", lc.size());
-                        // NullDetect nd = new NullDetect();
 
                         for (Channel ch : lc) {
                             logger.debug("In channel : {} {} ", ch.getUID(), ch.getUID().toString().split(":")[3]);
-                            // ChannelUID c = new ChannelUID(ch.getUID().toString().split(":")[3]);
-                            State s = new DecimalType(0);
                             String state = "";
+                            boolean processIt = true;
+
                             switch (ch.getUID().toString().split(":")[3]) {
                                 case "temp":
                                     logger.debug("in temp : {}", o.getTemp());
@@ -150,6 +161,10 @@ public class MeteoHandler extends BaseThingHandler {
                                 case "rh":
                                     logger.debug("in rh : {}", o.getRh());
                                     state = o.getRh();
+                                    break;
+                                case "pressure":
+                                    logger.debug("in pressure: {}", o.getRh());
+                                    state = o.getPressure();
                                     break;
                                 case "wx_phrase":
                                     logger.debug("in wx_phrase : {} ", o.getWx_phrase());
@@ -184,20 +199,57 @@ public class MeteoHandler extends BaseThingHandler {
                                     logger.debug("in uv_index : {} ", o.getUv_index());
                                     state = o.getUv_index();
                                     break;
+                                case "valid_time_gmt":
+                                    logger.warn("in valid_time_gmt : {} ", o.getValid_time_gmt());
+                                    state = o.getValid_time_gmt().toString();
+                                    break;
+                                default:
+                                    logger.warn("I don't know  : {} ", ch.getUID().toString().split(":")[3]);
+                                    processIt = false;
+                                    break;
                             }
 
-                            logger.warn("TypeParser : {}  ", TypeParser.parseType("StringType", state));
-                            logger.warn("TypeParser : {}  ", TypeParser.parseType("DecimalType", state));
-                            logger.warn("TypeParser Args : {}  {} ", ch.getAcceptedItemType(), state);
+                            logger.debug("channel : {} set to : {}  accepted : {}", ch.getUID(), state,
+                                    ch.getAcceptedItemType());
 
-                            if (TypeParser.parseType(ch.getAcceptedItemType(), state) == null) {
-                                logger.trace("Channel : {} Will get value : {} ", ch.getUID(), state);
-                                updateState(ch.getUID(), s);
-                            } else {
-                                logger.trace("Channel : {} had wrong type value : {} ", ch.getUID(), state);
-                                logger.trace("Was expecting : {} ", ch.getAcceptedItemType());
+                            if (processIt && state != null) {
+                                String type = new String();
+                                State s = new DecimalType(0);
+
+                                switch (ch.getAcceptedItemType()) {
+                                    case "String":
+                                        logger.debug("Accepted Type by {} is String", ch.getUID());
+                                        type = "StringType";
+                                        s = new StringType(state);
+                                        break;
+                                    case "Number":
+                                        logger.debug("Accepted Type by {} is Number", ch.getUID());
+                                        type = "DecimalType";
+                                        s = new DecimalType(state);
+                                        break;
+                                    case "DateTime":
+                                        logger.warn("Accepted Type by {} is DateTimeType", ch.getUID());
+                                        type = "DateTime";
+                                        s = new DateTimeType(state);
+                                        break;
+                                    default:
+                                        logger.warn("I don't know  : {} for {} ", ch.getAcceptedItemType(),
+                                                ch.getUID());
+                                        processIt = false;
+                                        break;
+                                }
+
+                                if (TypeParser.parseType(type, state) != null) {
+                                    logger.debug("Channel : {} Will get value : {} ", ch.getUID(), state);
+                                    updateState(ch.getUID(), s);
+
+                                } else {
+                                    logger.warn("Channel : {} had wrong type value : {} ", ch.getUID(), state);
+                                    logger.warn("Was expecting : {} ", ch.getAcceptedItemType());
+                                }
                             }
                         }
+
                     } catch (IOException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -212,6 +264,7 @@ public class MeteoHandler extends BaseThingHandler {
                 logger.debug("end of Runnable");
 
             }
+
         };
 
         logger.warn("refresh in Runnable {} ", refresh.intValue());

@@ -10,7 +10,7 @@ public class Observation {
     private Date expire_time_gmt;
     private String obs_id;
     private String obs_name;
-    private String valid_time_gmt;
+    private Date valid_time_gmt;
     private String day_ind;
     private String temp;
     @JsonProperty("class")
@@ -93,11 +93,11 @@ public class Observation {
         this.obs_name = obs_name;
     }
 
-    public String getValid_time_gmt() {
+    public Date getValid_time_gmt() {
         return valid_time_gmt;
     }
 
-    public void setValid_time_gmt(String valid_time_gmt) {
+    public void setValid_time_gmt(Date valid_time_gmt) {
         this.valid_time_gmt = valid_time_gmt;
     }
 
