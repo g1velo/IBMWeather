@@ -203,6 +203,7 @@ public class MeteoHandler extends BaseThingHandler {
                                     logger.warn("in valid_time_gmt : {} ", o.getValid_time_gmt());
                                     state = o.getValid_time_gmt().toString();
                                     break;
+
                                 default:
                                     logger.warn("I don't know  : {} ", ch.getUID().toString().split(":")[3]);
                                     processIt = false;
